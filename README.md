@@ -2,276 +2,369 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Blanket Warmer Monitor</title>
+    <title>Warming Blanket PID Monitor</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
-    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;600;700&family=DM+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
-            --bg-primary: #0a0e17;
-            --bg-secondary: #141824;
-            --bg-tertiary: #1a1f2e;
-            --accent-warm: #ff6b35;
-            --accent-cool: #00d4ff;
-            --accent-patient: #a855f7;
-            --accent-success: #00ff88;
-            --text-primary: #e8eaed;
-            --text-secondary: #9ba3af;
-            --border-color: #2a3142;
+            --nextion-bg: #0a0e17;
+            --nextion-bg-light: #0f1421;
+            --nextion-border: #00d4ff;
+            --nextion-text: #ffffff;
+            --nextion-text-dim: #6b7280;
+            --nextion-accent: #00ff88;
+            --nextion-warm: #ff6b35;
+            --nextion-patient: #a855f7;
         }
+        
         * { margin: 0; padding: 0; box-sizing: border-box; }
+        
         body {
-            font-family: 'DM Sans', sans-serif;
-            background: var(--bg-primary);
-            color: var(--text-primary);
+            font-family: 'Rajdhani', sans-serif;
+            background: linear-gradient(135deg, #050810 0%, #0a1628 50%, #0f1b2e 100%);
+            color: var(--nextion-text);
             min-height: 100vh;
-            background-image: 
-                radial-gradient(circle at 20% 30%, rgba(255, 107, 53, 0.08) 0%, transparent 50%),
-                radial-gradient(circle at 80% 70%, rgba(0, 212, 255, 0.06) 0%, transparent 50%);
+            background-attachment: fixed;
+            position: relative;
+            overflow-x: hidden;
         }
-        .container { max-width: 1600px; margin: 0 auto; padding: 2rem; }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background-image: 
+                radial-gradient(circle at 20% 30%, rgba(0, 212, 255, 0.08) 0%, transparent 40%),
+                radial-gradient(circle at 80% 70%, rgba(0, 255, 136, 0.05) 0%, transparent 40%);
+            pointer-events: none;
+            z-index: 0;
+        }
+        
+        .container { 
+            max-width: 1600px; 
+            margin: 0 auto; 
+            padding: 2rem; 
+            position: relative;
+            z-index: 1;
+        }
+        
         header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             padding: 2rem 0 3rem;
-            border-bottom: 1px solid var(--border-color);
+            border-bottom: 2px solid var(--nextion-border);
             margin-bottom: 3rem;
             animation: slideDown 0.6s ease-out;
+            position: relative;
         }
+        
+        header::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100%;
+            height: 2px;
+            background: linear-gradient(90deg, transparent, var(--nextion-border), transparent);
+            animation: glow 3s ease-in-out infinite;
+        }
+        
+        @keyframes glow {
+            0%, 100% { opacity: 0.5; }
+            50% { opacity: 1; }
+        }
+        
         @keyframes slideDown {
             from { opacity: 0; transform: translateY(-20px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        
         .logo { display: flex; align-items: center; gap: 1rem; }
+        
         .logo-icon {
-            width: 48px; height: 48px;
-            background: linear-gradient(135deg, var(--accent-warm), var(--accent-cool));
+            width: 56px; 
+            height: 56px;
+            background: linear-gradient(135deg, var(--nextion-warm), var(--nextion-border));
             border-radius: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-weight: 700;
-            font-size: 1.5rem;
-            box-shadow: 0 8px 24px rgba(255, 107, 53, 0.3);
-        }
-        h1 {
             font-size: 1.8rem;
-            font-weight: 700;
-            background: linear-gradient(135deg, var(--accent-warm), var(--accent-cool));
+            box-shadow: 
+                0 0 30px rgba(0, 212, 255, 0.5),
+                0 8px 24px rgba(255, 107, 53, 0.3);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .logo-icon::before {
+            content: '';
+            position: absolute;
+            width: 200%;
+            height: 200%;
+            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
+            animation: shine 3s infinite;
+        }
+        
+        @keyframes shine {
+            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
+            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+        }
+        
+        h1 {
+            font-family: 'Orbitron', sans-serif;
+            font-size: 2rem;
+            font-weight: 900;
+            background: linear-gradient(135deg, var(--nextion-border) 0%, var(--nextion-accent) 100%);
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            text-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
         }
+        
         .subtitle {
-            color: var(--text-secondary);
+            color: var(--nextion-text-dim);
             margin-top: 0.5rem;
-            font-size: 0.9rem;
+            font-size: 0.95rem;
+            letter-spacing: 1px;
         }
+        
         .status-indicator {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-            padding: 0.75rem 1.5rem;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
+            gap: 0.75rem;
+            padding: 0.85rem 1.75rem;
+            background: var(--nextion-bg-light);
+            border: 2px solid var(--nextion-border);
             border-radius: 50px;
-            font-family: 'JetBrains Mono', monospace;
+            font-family: 'Orbitron', sans-serif;
             font-size: 0.9rem;
+            box-shadow: 
+                0 0 20px rgba(0, 212, 255, 0.2),
+                inset 0 0 10px rgba(0, 212, 255, 0.05);
         }
+        
         .status-dot {
-            width: 10px; height: 10px;
+            width: 12px; 
+            height: 12px;
             border-radius: 50%;
-            background: #666;
+            background: #4b5563;
             transition: all 0.3s;
+            box-shadow: 0 0 0 3px rgba(75, 85, 99, 0.3);
         }
+        
         .status-dot.online {
-            background: var(--accent-success);
-            box-shadow: 0 0 12px var(--accent-success);
+            background: var(--nextion-accent);
+            box-shadow: 
+                0 0 12px var(--nextion-accent),
+                0 0 0 3px rgba(0, 255, 136, 0.3);
             animation: pulse 2s ease-in-out infinite;
         }
+        
         @keyframes pulse {
-            0%, 100% { opacity: 1; }
-            50% { opacity: 0.5; }
+            0%, 100% { 
+                opacity: 1; 
+                transform: scale(1);
+            }
+            50% { 
+                opacity: 0.7; 
+                transform: scale(1.1);
+            }
         }
+        
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
             gap: 2rem;
             margin-bottom: 3rem;
         }
+        
         .card {
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
+            background: var(--nextion-bg);
+            border: 2px solid var(--nextion-border);
             border-radius: 16px;
             padding: 2rem;
             position: relative;
             overflow: hidden;
-            transition: all 0.3s;
+            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             animation: fadeInUp 0.6s ease-out backwards;
+            box-shadow: 
+                0 0 20px rgba(0, 212, 255, 0.1),
+                inset 0 0 20px rgba(0, 212, 255, 0.02);
         }
+        
         .card::before {
             content: '';
             position: absolute;
             top: 0; left: 0; right: 0;
             height: 3px;
-            background: linear-gradient(90deg, var(--accent-warm), var(--accent-cool));
+            background: linear-gradient(90deg, 
+                var(--nextion-border), 
+                var(--nextion-accent), 
+                var(--nextion-border));
+            opacity: 0;
+            transition: opacity 0.4s;
+        }
+        
+        .card::after {
+            content: '';
+            position: absolute;
+            inset: 0;
+            background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(0, 212, 255, 0.08), transparent 50%);
             opacity: 0;
             transition: opacity 0.3s;
         }
+        
         .card:hover {
-            border-color: var(--accent-warm);
-            transform: translateY(-4px);
-            box-shadow: 0 12px 40px rgba(255, 107, 53, 0.2);
+            border-color: var(--nextion-accent);
+            transform: translateY(-6px);
+            box-shadow: 
+                0 0 40px rgba(0, 212, 255, 0.3),
+                0 12px 40px rgba(0, 255, 136, 0.2),
+                inset 0 0 30px rgba(0, 212, 255, 0.05);
         }
+        
         .card:hover::before { opacity: 1; }
+        .card:hover::after { opacity: 1; }
+        
         @keyframes fadeInUp {
             from { opacity: 0; transform: translateY(30px); }
             to { opacity: 1; transform: translateY(0); }
         }
+        
         .card:nth-child(1) { animation-delay: 0.1s; }
         .card:nth-child(2) { animation-delay: 0.2s; }
         .card:nth-child(3) { animation-delay: 0.3s; }
-        .card:nth-child(4) { animation-delay: 0.4s; }
+        
         .card-header {
             display: flex;
             justify-content: space-between;
             align-items: center;
             margin-bottom: 1.5rem;
         }
+        
         .card-title {
-            font-size: 0.9rem;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 0.85rem;
             text-transform: uppercase;
-            letter-spacing: 1px;
-            color: var(--text-secondary);
+            letter-spacing: 2px;
+            color: var(--nextion-border);
             font-weight: 600;
         }
+        
         .temperature-display {
-            font-size: 3.5rem;
-            font-weight: 700;
-            font-family: 'JetBrains Mono', monospace;
+            font-family: 'Orbitron', sans-serif;
+            font-size: 4rem;
+            font-weight: 900;
             line-height: 1;
             margin-bottom: 0.5rem;
+            position: relative;
         }
-        .temp-real { color: var(--accent-warm); }
-        .temp-patient { color: var(--accent-patient); }
-        .temp-setpoint { color: var(--accent-cool); }
-        .unit { font-size: 1.5rem; color: var(--text-secondary); }
+        
+        .temp-real { 
+            color: var(--nextion-warm);
+            text-shadow: 0 0 30px rgba(255, 107, 53, 0.6);
+        }
+        
+        .temp-patient { 
+            color: var(--nextion-patient);
+            text-shadow: 0 0 30px rgba(168, 85, 247, 0.6);
+        }
+        
+        .temp-setpoint { 
+            color: var(--nextion-border);
+            text-shadow: 0 0 30px rgba(0, 212, 255, 0.6);
+        }
+        
+        .unit { 
+            font-size: 1.8rem; 
+            color: var(--nextion-text-dim);
+            font-weight: 600;
+        }
+        
         .sub-info {
-            color: var(--text-secondary);
+            color: var(--nextion-text-dim);
             font-size: 0.9rem;
             margin-top: 0.5rem;
-            font-family: 'JetBrains Mono', monospace;
+            font-family: 'Rajdhani', sans-serif;
+            letter-spacing: 0.5px;
         }
+        
         .chart-container {
             grid-column: 1 / -1;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
+            background: var(--nextion-bg);
+            border: 2px solid var(--nextion-border);
             border-radius: 16px;
             padding: 2rem;
-            animation: fadeInUp 0.6s ease-out 0.5s backwards;
+            animation: fadeInUp 0.6s ease-out 0.4s backwards;
+            box-shadow: 
+                0 0 30px rgba(0, 212, 255, 0.15),
+                inset 0 0 20px rgba(0, 212, 255, 0.03);
+            position: relative;
+            overflow: hidden;
         }
+        
+        .chart-container::before {
+            content: '';
+            position: absolute;
+            top: 0; left: 0; right: 0;
+            height: 3px;
+            background: linear-gradient(90deg, 
+                transparent,
+                var(--nextion-border), 
+                var(--nextion-accent),
+                var(--nextion-border),
+                transparent);
+        }
+        
         .chart-wrapper {
             position: relative;
             height: 400px;
             margin-top: 1.5rem;
         }
+        
         .legend {
             display: flex;
-            gap: 1.5rem;
+            gap: 2rem;
             flex-wrap: wrap;
         }
+        
         .legend-item {
             display: flex;
             align-items: center;
-            gap: 0.5rem;
-        }
-        .legend-color {
-            width: 12px;
-            height: 12px;
-            border-radius: 2px;
-        }
-        .control-panel {
-            grid-column: 1 / -1;
-            background: var(--bg-tertiary);
-            border: 1px solid var(--border-color);
-            border-radius: 16px;
-            padding: 2rem;
-            animation: fadeInUp 0.6s ease-out 0.6s backwards;
-        }
-        .control-grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
-            gap: 2rem;
-            margin-top: 1.5rem;
-        }
-        .control-group {
-            display: flex;
-            flex-direction: column;
             gap: 0.75rem;
-        }
-        label {
-            font-size: 0.85rem;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            color: var(--text-secondary);
-            font-weight: 600;
-        }
-        input[type="number"] {
-            width: 100%;
-            padding: 1rem;
-            background: var(--bg-secondary);
-            border: 1px solid var(--border-color);
+            padding: 0.5rem 1rem;
+            background: rgba(0, 212, 255, 0.05);
             border-radius: 8px;
-            color: var(--text-primary);
-            font-family: 'JetBrains Mono', monospace;
-            font-size: 1.1rem;
             transition: all 0.3s;
         }
-        input:focus {
-            outline: none;
-            border-color: var(--accent-warm);
-            box-shadow: 0 0 0 3px rgba(255, 107, 53, 0.1);
-        }
-        button {
-            padding: 1rem 2rem;
-            background: linear-gradient(135deg, var(--accent-warm), #ff8555);
-            border: none;
-            border-radius: 8px;
-            color: white;
-            font-weight: 600;
-            font-size: 1rem;
-            cursor: pointer;
-            transition: all 0.3s;
-            text-transform: uppercase;
-            letter-spacing: 0.5px;
-            box-shadow: 0 4px 16px rgba(255, 107, 53, 0.3);
-        }
-        button:hover {
+        
+        .legend-item:hover {
+            background: rgba(0, 212, 255, 0.1);
             transform: translateY(-2px);
-            box-shadow: 0 8px 24px rgba(255, 107, 53, 0.4);
         }
-        button:active { transform: translateY(0); }
-        button.stop {
-            background: linear-gradient(135deg, #ef4444, #dc2626);
+        
+        .legend-color {
+            width: 14px;
+            height: 14px;
+            border-radius: 3px;
+            box-shadow: 0 0 8px currentColor;
         }
-        .button-group {
-            display: flex;
-            gap: 1rem;
-            margin-top: 2rem;
-        }
-        .timer-display {
-            font-size: 2.5rem;
-            font-weight: 700;
-            font-family: 'JetBrains Mono', monospace;
-            color: var(--accent-success);
-        }
+        
         @media (max-width: 768px) {
             .container { padding: 1rem; }
-            .header { flex-direction: column; gap: 1rem; align-items: flex-start; }
+            header { flex-direction: column; gap: 1rem; align-items: flex-start; }
             .grid { grid-template-columns: 1fr; }
-            .temperature-display { font-size: 2.5rem; }
+            .temperature-display { font-size: 3rem; }
             .chart-wrapper { height: 300px; }
-            .button-group { flex-direction: column; }
-            .legend { justify-content: center; }
+            h1 { font-size: 1.5rem; }
+            .legend { justify-content: center; gap: 1rem; }
         }
     </style>
 </head>
@@ -281,8 +374,8 @@
             <div class="logo">
                 <div class="logo-icon">🔥</div>
                 <div>
-                    <h1>Blanket Warmer Control</h1>
-                    <p class="subtitle">Sistem Monitoring Real-Time PT100 MAX31865</p>
+                    <h1>Warming Blanket PID</h1>
+                    <p class="subtitle">Real-Time Monitoring System • PT100 MAX31865</p>
                 </div>
             </div>
             <div class="status-indicator">
@@ -294,88 +387,58 @@
         <div class="grid">
             <div class="card">
                 <div class="card-header">
-                    <span class="card-title">Suhu PT100 (Real)</span>
-                    <span style="font-size: 1.5rem;">🌡️</span>
+                    <span class="card-title">Suhu Alat</span>
+                    <span style="font-size: 1.8rem;">🌡️</span>
                 </div>
                 <div class="temperature-display temp-real">
                     <span id="currentTemp">--</span><span class="unit">°C</span>
                 </div>
-                <div class="sub-info">Pembacaan sensor MAX31865</div>
-            </div>
-
-            <div class="card">
-                <div class="card-header">
-                    <span class="card-title">Suhu Setpoint</span>
-                    <span style="font-size: 1.5rem;">🎯</span>
-                </div>
-                <div class="temperature-display temp-setpoint">
-                    <span id="setpointDisplay">--</span><span class="unit">°C</span>
-                </div>
-                <div class="sub-info">Target suhu yang diinginkan</div>
+                <div class="sub-info">Sensor PT100 MAX31865</div>
             </div>
 
             <div class="card">
                 <div class="card-header">
                     <span class="card-title">Suhu Pasien</span>
-                    <span style="font-size: 1.5rem;">👤</span>
+                    <span style="font-size: 1.8rem;">👤</span>
                 </div>
                 <div class="temperature-display temp-patient">
                     <span id="patientTemp">--</span><span class="unit">°C</span>
                 </div>
-                <div class="sub-info">Suhu pasien (simulasi)</div>
+                <div class="sub-info">Sensor PT100 MAX31865</div>
             </div>
 
             <div class="card">
                 <div class="card-header">
-                    <span class="card-title">Timer</span>
-                    <span style="font-size: 1.5rem;">⏱️</span>
+                    <span class="card-title">Setpoint</span>
+                    <span style="font-size: 1.8rem;">🎯</span>
                 </div>
-                <div class="timer-display" id="timerDisplay">00:00:00</div>
-                <div class="sub-info">Waktu tersisa</div>
+                <div class="temperature-display temp-setpoint">
+                    <span id="setpointDisplay">--</span><span class="unit">°C</span>
+                </div>
+                <div class="sub-info">Target suhu sistem</div>
             </div>
         </div>
 
         <div class="chart-container">
             <div class="card-header">
-                <span class="card-title">Grafik Suhu Real-Time</span>
+                <span class="card-title">Plotting Graph - Temperature Monitoring</span>
                 <div class="legend">
                     <div class="legend-item">
                         <div class="legend-color" style="background: #ff6b35;"></div>
-                        <span style="font-size: 0.85rem; color: var(--text-secondary);">Suhu Real (PT100)</span>
-                    </div>
-                    <div class="legend-item">
-                        <div class="legend-color" style="background: #00d4ff;"></div>
-                        <span style="font-size: 0.85rem; color: var(--text-secondary);">Setpoint</span>
+                        <span style="font-size: 0.9rem;">Suhu Alat</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-color" style="background: #a855f7;"></div>
-                        <span style="font-size: 0.85rem; color: var(--text-secondary);">Suhu Pasien</span>
+                        <span style="font-size: 0.9rem;">Suhu Pasien</span>
+                    </div>
+                    <div class="legend-item">
+                        <div class="legend-color" style="background: #00d4ff;"></div>
+                        <span style="font-size: 0.9rem;">Setpoint</span>
                     </div>
                 </div>
             </div>
             <div class="chart-wrapper">
                 <canvas id="tempChart"></canvas>
-            </div>
-        </div>
-
-        <div class="control-panel">
-            <div class="card-header">
-                <span class="card-title">Panel Kontrol</span>
-                <span style="font-size: 1.5rem;">🎛️</span>
-            </div>
-            <div class="control-grid">
-                <div class="control-group">
-                    <label for="setpoint">Target Suhu (°C)</label>
-                    <input type="number" id="setpoint" value="40" min="25" max="55" step="0.5">
-                </div>
-                <div class="control-group">
-                    <label for="duration">Durasi (Menit)</label>
-                    <input type="number" id="duration" value="60" min="1" max="180" step="1">
-                </div>
-            </div>
-            <div class="button-group">
-                <button onclick="startSystem()" id="btnStart">▶️ Start System</button>
-                <button onclick="stopSystem()" class="stop" id="btnStop">⏹️ Stop System</button>
             </div>
         </div>
     </div>
@@ -385,6 +448,17 @@
         let chart;
         const maxDataPoints = 50;
 
+        // Mouse tracking for card hover effect
+        document.querySelectorAll('.card').forEach(card => {
+            card.addEventListener('mousemove', (e) => {
+                const rect = card.getBoundingClientRect();
+                const x = ((e.clientX - rect.left) / rect.width) * 100;
+                const y = ((e.clientY - rect.top) / rect.height) * 100;
+                card.style.setProperty('--mouse-x', x + '%');
+                card.style.setProperty('--mouse-y', y + '%');
+            });
+        });
+
         // Initialize Chart.js
         const ctx = document.getElementById('tempChart').getContext('2d');
         chart = new Chart(ctx, {
@@ -392,32 +466,40 @@
             data: {
                 labels: [],
                 datasets: [{
-                    label: 'Suhu Real (PT100)',
+                    label: 'Suhu Alat',
                     data: [],
                     borderColor: '#ff6b35',
-                    backgroundColor: 'rgba(255, 107, 53, 0.1)',
+                    backgroundColor: 'rgba(255, 107, 53, 0.15)',
                     borderWidth: 3,
                     tension: 0.4,
                     fill: true,
                     pointRadius: 0,
                     pointHoverRadius: 6,
-                }, {
-                    label: 'Setpoint',
-                    data: [],
-                    borderColor: '#00d4ff',
-                    borderWidth: 2,
-                    borderDash: [5, 5],
-                    tension: 0.4,
-                    fill: false,
-                    pointRadius: 0,
+                    pointHoverBackgroundColor: '#ff6b35',
+                    pointHoverBorderColor: '#fff',
+                    pointHoverBorderWidth: 2,
                 }, {
                     label: 'Suhu Pasien',
                     data: [],
                     borderColor: '#a855f7',
-                    backgroundColor: 'rgba(168, 85, 247, 0.1)',
-                    borderWidth: 2,
+                    backgroundColor: 'rgba(168, 85, 247, 0.15)',
+                    borderWidth: 3,
                     tension: 0.4,
                     fill: true,
+                    pointRadius: 0,
+                    pointHoverRadius: 6,
+                    pointHoverBackgroundColor: '#a855f7',
+                    pointHoverBorderColor: '#fff',
+                    pointHoverBorderWidth: 2,
+                }, {
+                    label: 'Setpoint',
+                    data: [],
+                    borderColor: '#00d4ff',
+                    backgroundColor: 'rgba(0, 212, 255, 0.1)',
+                    borderWidth: 2,
+                    borderDash: [8, 4],
+                    tension: 0.4,
+                    fill: false,
                     pointRadius: 0,
                 }]
             },
@@ -428,12 +510,17 @@
                 plugins: {
                     legend: { display: false },
                     tooltip: {
-                        backgroundColor: '#1a1f2e',
-                        titleColor: '#e8eaed',
-                        bodyColor: '#9ba3af',
-                        borderColor: '#2a3142',
-                        borderWidth: 1,
-                        padding: 12,
+                        backgroundColor: 'rgba(10, 14, 23, 0.95)',
+                        titleColor: '#00d4ff',
+                        titleFont: { size: 13, weight: 'bold', family: 'Orbitron' },
+                        bodyColor: '#ffffff',
+                        bodyFont: { size: 12, family: 'Rajdhani' },
+                        borderColor: '#00d4ff',
+                        borderWidth: 2,
+                        padding: 14,
+                        displayColors: true,
+                        boxPadding: 6,
+                        usePointStyle: true,
                         callbacks: {
                             label: function(context) {
                                 return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '°C';
@@ -446,15 +533,29 @@
                         beginAtZero: false,
                         min: 20,
                         max: 60,
-                        grid: { color: '#2a3142', drawBorder: false },
+                        grid: { 
+                            color: 'rgba(0, 212, 255, 0.1)', 
+                            drawBorder: false,
+                            lineWidth: 1
+                        },
+                        border: { display: false },
                         ticks: {
-                            color: '#9ba3af',
+                            color: '#00d4ff',
+                            font: { size: 11, family: 'Orbitron' },
                             callback: (value) => value + '°C'
                         }
                     },
                     x: {
-                        grid: { color: '#2a3142', drawBorder: false },
-                        ticks: { color: '#9ba3af', maxTicksLimit: 10 }
+                        grid: { 
+                            color: 'rgba(0, 212, 255, 0.08)', 
+                            drawBorder: false 
+                        },
+                        border: { display: false },
+                        ticks: { 
+                            color: '#6b7280', 
+                            font: { size: 10, family: 'Rajdhani' },
+                            maxTicksLimit: 10 
+                        }
                     }
                 }
             }
@@ -497,27 +598,14 @@
             document.getElementById('setpointDisplay').textContent = data.setpoint.toFixed(1);
             document.getElementById('patientTemp').textContent = data.patientTemp.toFixed(1);
             
-            // Update timer display
-            if (data.timeRemaining > 0) {
-                const hours = Math.floor(data.timeRemaining / 3600);
-                const minutes = Math.floor((data.timeRemaining % 3600) / 60);
-                const seconds = data.timeRemaining % 60;
-                document.getElementById('timerDisplay').textContent = 
-                    String(hours).padStart(2, '0') + ':' +
-                    String(minutes).padStart(2, '0') + ':' +
-                    String(seconds).padStart(2, '0');
-            } else {
-                document.getElementById('timerDisplay').textContent = '00:00:00';
-            }
-            
             // Update chart
             const now = new Date();
             const timeLabel = now.toLocaleTimeString('id-ID');
             
             chart.data.labels.push(timeLabel);
             chart.data.datasets[0].data.push(data.currentTemp);
-            chart.data.datasets[1].data.push(data.setpoint);
-            chart.data.datasets[2].data.push(data.patientTemp);
+            chart.data.datasets[1].data.push(data.patientTemp);
+            chart.data.datasets[2].data.push(data.setpoint);
             
             // Limit data points
             if (chart.data.labels.length > maxDataPoints) {
@@ -530,49 +618,23 @@
             chart.update('none');
         }
 
-        function startSystem() {
-            const setpoint = parseFloat(document.getElementById('setpoint').value);
-            const duration = parseInt(document.getElementById('duration').value) * 60; // Convert to seconds
-            
-            if (isNaN(setpoint) || setpoint < 25 || setpoint > 55) {
-                alert('Target suhu harus antara 25-55°C');
-                return;
-            }
-            
-            if (isNaN(duration) || duration <= 0) {
-                alert('Durasi harus lebih dari 0 menit');
-                return;
-            }
-            
-            const command = {
-                command: 'start',
-                setpoint: setpoint,
-                duration: duration
+        // Simulate data for demo
+        function simulateData() {
+            const data = {
+                currentTemp: 35 + Math.random() * 8,
+                patientTemp: 36 + Math.random() * 2,
+                setpoint: 40
             };
-            
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify(command));
-                console.log('Start command sent:', command);
-            } else {
-                alert('WebSocket tidak terhubung!');
-            }
-        }
-
-        function stopSystem() {
-            if (ws && ws.readyState === WebSocket.OPEN) {
-                ws.send(JSON.stringify({ command: 'stop' }));
-                console.log('Stop command sent');
-            } else {
-                alert('WebSocket tidak terhubung!');
-            }
+            updateDisplay(data);
         }
 
         // Auto-connect on page load
         window.addEventListener('load', () => {
             connectWebSocket();
+            // Demo simulation
+            setInterval(simulateData, 1000);
         });
 
-        // Reconnect when page becomes visible
         document.addEventListener('visibilitychange', () => {
             if (!document.hidden && (!ws || ws.readyState !== WebSocket.OPEN)) {
                 connectWebSocket();
