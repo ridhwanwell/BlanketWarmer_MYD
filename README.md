@@ -1,3 +1,4 @@
+<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -301,10 +302,11 @@
         let chart;
         const maxDataPoints = 50;
 
-        // ============= MQTT SETTINGS =============
+        // ============= MQTT SETTINGS (FIXED - COCOK DENGAN ESP32) =============
         const mqtt_broker = 'broker.hivemq.com';
         const mqtt_port = 8000;  // WebSocket port
-        const mqtt_topic = 'warmingblanket/data';
+        const mqtt_topic_data = 'warmingblanket/data';        // Subscribe data dari ESP32
+        const mqtt_topic_control = 'warmingblanket/control';  // Publish command ke ESP32
 
         // Initialize Chart.js
         const ctx = document.getElementById('tempChart').getContext('2d');
@@ -374,7 +376,7 @@
             }
         });
 
-        // ============= MQTT CONNECTION =============
+        // ============= MQTT CONNECTION (FIXED - 2 TOPICS) =============
         function connectMQTT() {
             console.log('Connecting to MQTT broker...');
             
@@ -392,11 +394,12 @@
                 document.getElementById('statusDot').classList.add('online');
                 document.getElementById('statusText').textContent = 'ONLINE';
                 
-                mqttClient.subscribe(mqtt_topic, (err) => {
+                // Subscribe ke DATA topic (terima data dari ESP32)
+                mqttClient.subscribe(mqtt_topic_data, (err) => {
                     if (err) {
                         console.error('Subscribe error:', err);
                     } else {
-                        console.log('Subscribed to:', mqtt_topic);
+                        console.log('Subscribed to:', mqtt_topic_data);
                     }
                 });
             });
@@ -454,6 +457,20 @@
             }
             
             chart.update('none');
+        }
+
+        // ============= SEND COMMAND TO ESP32 (Optional - untuk kontrol) =============
+        function sendCommand(command, value) {
+            if (mqttClient && mqttClient.connected) {
+                const payload = {
+                    command: command,
+                    value: value
+                };
+                mqttClient.publish(mqtt_topic_control, JSON.stringify(payload));
+                console.log('Command sent:', payload);
+            } else {
+                console.error('MQTT not connected!');
+            }
         }
 
         // Auto-connect on page load
