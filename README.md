@@ -4,6 +4,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Warming Blanket PID Monitor</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+    <script src="https://unpkg.com/mqtt/dist/mqtt.min.js"></script>
     <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@400;600;700;900&family=Rajdhani:wght@400;500;600;700&display=swap" rel="stylesheet">
     <style>
         :root {
@@ -25,30 +26,12 @@
             color: var(--nextion-text);
             min-height: 100vh;
             background-attachment: fixed;
-            position: relative;
-            overflow-x: hidden;
-        }
-        
-        body::before {
-            content: '';
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-image: 
-                radial-gradient(circle at 20% 30%, rgba(0, 212, 255, 0.08) 0%, transparent 40%),
-                radial-gradient(circle at 80% 70%, rgba(0, 255, 136, 0.05) 0%, transparent 40%);
-            pointer-events: none;
-            z-index: 0;
         }
         
         .container { 
             max-width: 1600px; 
             margin: 0 auto; 
             padding: 2rem; 
-            position: relative;
-            z-index: 1;
         }
         
         header {
@@ -58,29 +41,6 @@
             padding: 2rem 0 3rem;
             border-bottom: 2px solid var(--nextion-border);
             margin-bottom: 3rem;
-            animation: slideDown 0.6s ease-out;
-            position: relative;
-        }
-        
-        header::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            width: 100%;
-            height: 2px;
-            background: linear-gradient(90deg, transparent, var(--nextion-border), transparent);
-            animation: glow 3s ease-in-out infinite;
-        }
-        
-        @keyframes glow {
-            0%, 100% { opacity: 0.5; }
-            50% { opacity: 1; }
-        }
-        
-        @keyframes slideDown {
-            from { opacity: 0; transform: translateY(-20px); }
-            to { opacity: 1; transform: translateY(0); }
         }
         
         .logo { display: flex; align-items: center; gap: 1rem; }
@@ -93,46 +53,25 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            font-weight: 700;
             font-size: 1.8rem;
-            box-shadow: 
-                0 0 30px rgba(0, 212, 255, 0.5),
-                0 8px 24px rgba(255, 107, 53, 0.3);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .logo-icon::before {
-            content: '';
-            position: absolute;
-            width: 200%;
-            height: 200%;
-            background: linear-gradient(45deg, transparent, rgba(255,255,255,0.1), transparent);
-            animation: shine 3s infinite;
-        }
-        
-        @keyframes shine {
-            0% { transform: translateX(-100%) translateY(-100%) rotate(45deg); }
-            100% { transform: translateX(100%) translateY(100%) rotate(45deg); }
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
         }
         
         h1 {
             font-family: 'Orbitron', sans-serif;
             font-size: 2rem;
             font-weight: 900;
-            background: linear-gradient(135deg, var(--nextion-border) 0%, var(--nextion-accent) 100%);
+            background: linear-gradient(135deg, var(--nextion-border), var(--nextion-accent));
             -webkit-background-clip: text;
             -webkit-text-fill-color: transparent;
             text-transform: uppercase;
             letter-spacing: 3px;
-            text-shadow: 0 0 30px rgba(0, 212, 255, 0.5);
         }
         
         .subtitle {
             color: var(--nextion-text-dim);
             margin-top: 0.5rem;
             font-size: 0.95rem;
-            letter-spacing: 1px;
         }
         
         .status-indicator {
@@ -145,9 +84,6 @@
             border-radius: 50px;
             font-family: 'Orbitron', sans-serif;
             font-size: 0.9rem;
-            box-shadow: 
-                0 0 20px rgba(0, 212, 255, 0.2),
-                inset 0 0 10px rgba(0, 212, 255, 0.05);
         }
         
         .status-dot {
@@ -155,27 +91,17 @@
             height: 12px;
             border-radius: 50%;
             background: #4b5563;
-            transition: all 0.3s;
-            box-shadow: 0 0 0 3px rgba(75, 85, 99, 0.3);
         }
         
         .status-dot.online {
             background: var(--nextion-accent);
-            box-shadow: 
-                0 0 12px var(--nextion-accent),
-                0 0 0 3px rgba(0, 255, 136, 0.3);
+            box-shadow: 0 0 12px var(--nextion-accent);
             animation: pulse 2s ease-in-out infinite;
         }
         
         @keyframes pulse {
-            0%, 100% { 
-                opacity: 1; 
-                transform: scale(1);
-            }
-            50% { 
-                opacity: 0.7; 
-                transform: scale(1.1);
-            }
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
         }
         
         .grid {
@@ -190,57 +116,15 @@
             border: 2px solid var(--nextion-border);
             border-radius: 16px;
             padding: 2rem;
-            position: relative;
-            overflow: hidden;
-            transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
-            animation: fadeInUp 0.6s ease-out backwards;
-            box-shadow: 
-                0 0 20px rgba(0, 212, 255, 0.1),
-                inset 0 0 20px rgba(0, 212, 255, 0.02);
-        }
-        
-        .card::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, 
-                var(--nextion-border), 
-                var(--nextion-accent), 
-                var(--nextion-border));
-            opacity: 0;
-            transition: opacity 0.4s;
-        }
-        
-        .card::after {
-            content: '';
-            position: absolute;
-            inset: 0;
-            background: radial-gradient(circle at var(--mouse-x, 50%) var(--mouse-y, 50%), rgba(0, 212, 255, 0.08), transparent 50%);
-            opacity: 0;
-            transition: opacity 0.3s;
+            box-shadow: 0 0 20px rgba(0, 212, 255, 0.1);
+            transition: all 0.3s;
         }
         
         .card:hover {
             border-color: var(--nextion-accent);
             transform: translateY(-6px);
-            box-shadow: 
-                0 0 40px rgba(0, 212, 255, 0.3),
-                0 12px 40px rgba(0, 255, 136, 0.2),
-                inset 0 0 30px rgba(0, 212, 255, 0.05);
+            box-shadow: 0 0 40px rgba(0, 212, 255, 0.3);
         }
-        
-        .card:hover::before { opacity: 1; }
-        .card:hover::after { opacity: 1; }
-        
-        @keyframes fadeInUp {
-            from { opacity: 0; transform: translateY(30px); }
-            to { opacity: 1; transform: translateY(0); }
-        }
-        
-        .card:nth-child(1) { animation-delay: 0.1s; }
-        .card:nth-child(2) { animation-delay: 0.2s; }
-        .card:nth-child(3) { animation-delay: 0.3s; }
         
         .card-header {
             display: flex;
@@ -264,7 +148,6 @@
             font-weight: 900;
             line-height: 1;
             margin-bottom: 0.5rem;
-            position: relative;
         }
         
         .temp-real { 
@@ -292,8 +175,6 @@
             color: var(--nextion-text-dim);
             font-size: 0.9rem;
             margin-top: 0.5rem;
-            font-family: 'Rajdhani', sans-serif;
-            letter-spacing: 0.5px;
         }
         
         .chart-container {
@@ -302,25 +183,7 @@
             border: 2px solid var(--nextion-border);
             border-radius: 16px;
             padding: 2rem;
-            animation: fadeInUp 0.6s ease-out 0.4s backwards;
-            box-shadow: 
-                0 0 30px rgba(0, 212, 255, 0.15),
-                inset 0 0 20px rgba(0, 212, 255, 0.03);
-            position: relative;
-            overflow: hidden;
-        }
-        
-        .chart-container::before {
-            content: '';
-            position: absolute;
-            top: 0; left: 0; right: 0;
-            height: 3px;
-            background: linear-gradient(90deg, 
-                transparent,
-                var(--nextion-border), 
-                var(--nextion-accent),
-                var(--nextion-border),
-                transparent);
+            box-shadow: 0 0 30px rgba(0, 212, 255, 0.15);
         }
         
         .chart-wrapper {
@@ -339,15 +202,6 @@
             display: flex;
             align-items: center;
             gap: 0.75rem;
-            padding: 0.5rem 1rem;
-            background: rgba(0, 212, 255, 0.05);
-            border-radius: 8px;
-            transition: all 0.3s;
-        }
-        
-        .legend-item:hover {
-            background: rgba(0, 212, 255, 0.1);
-            transform: translateY(-2px);
         }
         
         .legend-color {
@@ -364,7 +218,6 @@
             .temperature-display { font-size: 3rem; }
             .chart-wrapper { height: 300px; }
             h1 { font-size: 1.5rem; }
-            .legend { justify-content: center; gap: 1rem; }
         }
     </style>
 </head>
@@ -375,7 +228,7 @@
                 <div class="logo-icon">🔥</div>
                 <div>
                     <h1>Warming Blanket PID</h1>
-                    <p class="subtitle">Real-Time Monitoring System • PT100 MAX31865</p>
+                    <p class="subtitle">Real-Time MQTT Monitoring System</p>
                 </div>
             </div>
             <div class="status-indicator">
@@ -444,20 +297,14 @@
     </div>
 
     <script>
-        let ws;
+        let mqttClient;
         let chart;
         const maxDataPoints = 50;
 
-        // Mouse tracking for card hover effect
-        document.querySelectorAll('.card').forEach(card => {
-            card.addEventListener('mousemove', (e) => {
-                const rect = card.getBoundingClientRect();
-                const x = ((e.clientX - rect.left) / rect.width) * 100;
-                const y = ((e.clientY - rect.top) / rect.height) * 100;
-                card.style.setProperty('--mouse-x', x + '%');
-                card.style.setProperty('--mouse-y', y + '%');
-            });
-        });
+        // ============= MQTT SETTINGS =============
+        const mqtt_broker = 'broker.hivemq.com';
+        const mqtt_port = 8000;  // WebSocket port
+        const mqtt_topic = 'warmingblanket/data';
 
         // Initialize Chart.js
         const ctx = document.getElementById('tempChart').getContext('2d');
@@ -474,10 +321,7 @@
                     tension: 0.4,
                     fill: true,
                     pointRadius: 0,
-                    pointHoverRadius: 6,
-                    pointHoverBackgroundColor: '#ff6b35',
-                    pointHoverBorderColor: '#fff',
-                    pointHoverBorderWidth: 2,
+                    pointHoverRadius: 6
                 }, {
                     label: 'Suhu Pasien',
                     data: [],
@@ -487,20 +331,16 @@
                     tension: 0.4,
                     fill: true,
                     pointRadius: 0,
-                    pointHoverRadius: 6,
-                    pointHoverBackgroundColor: '#a855f7',
-                    pointHoverBorderColor: '#fff',
-                    pointHoverBorderWidth: 2,
+                    pointHoverRadius: 6
                 }, {
                     label: 'Setpoint',
                     data: [],
                     borderColor: '#00d4ff',
-                    backgroundColor: 'rgba(0, 212, 255, 0.1)',
                     borderWidth: 2,
                     borderDash: [8, 4],
                     tension: 0.4,
                     fill: false,
-                    pointRadius: 0,
+                    pointRadius: 0
                 }]
             },
             options: {
@@ -512,20 +352,10 @@
                     tooltip: {
                         backgroundColor: 'rgba(10, 14, 23, 0.95)',
                         titleColor: '#00d4ff',
-                        titleFont: { size: 13, weight: 'bold', family: 'Orbitron' },
                         bodyColor: '#ffffff',
-                        bodyFont: { size: 12, family: 'Rajdhani' },
                         borderColor: '#00d4ff',
                         borderWidth: 2,
-                        padding: 14,
-                        displayColors: true,
-                        boxPadding: 6,
-                        usePointStyle: true,
-                        callbacks: {
-                            label: function(context) {
-                                return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + '°C';
-                            }
-                        }
+                        padding: 14
                     }
                 },
                 scales: {
@@ -533,65 +363,73 @@
                         beginAtZero: false,
                         min: 20,
                         max: 60,
-                        grid: { 
-                            color: 'rgba(0, 212, 255, 0.1)', 
-                            drawBorder: false,
-                            lineWidth: 1
-                        },
-                        border: { display: false },
-                        ticks: {
-                            color: '#00d4ff',
-                            font: { size: 11, family: 'Orbitron' },
-                            callback: (value) => value + '°C'
-                        }
+                        grid: { color: 'rgba(0, 212, 255, 0.1)' },
+                        ticks: { color: '#00d4ff' }
                     },
                     x: {
-                        grid: { 
-                            color: 'rgba(0, 212, 255, 0.08)', 
-                            drawBorder: false 
-                        },
-                        border: { display: false },
-                        ticks: { 
-                            color: '#6b7280', 
-                            font: { size: 10, family: 'Rajdhani' },
-                            maxTicksLimit: 10 
-                        }
+                        grid: { color: 'rgba(0, 212, 255, 0.08)' },
+                        ticks: { color: '#6b7280', maxTicksLimit: 10 }
                     }
                 }
             }
         });
 
-        // WebSocket Connection
-        function connectWebSocket() {
-            ws = new WebSocket('ws://' + window.location.hostname + '/ws');
+        // ============= MQTT CONNECTION =============
+        function connectMQTT() {
+            console.log('Connecting to MQTT broker...');
             
-            ws.onopen = () => {
-                console.log('WebSocket Connected');
+            const clientId = 'web_client_' + Math.random().toString(16).substr(2, 8);
+            const connectUrl = `ws://${mqtt_broker}:${mqtt_port}/mqtt`;
+            
+            mqttClient = mqtt.connect(connectUrl, {
+                clientId: clientId,
+                clean: true,
+                reconnectPeriod: 3000
+            });
+
+            mqttClient.on('connect', () => {
+                console.log('MQTT Connected!');
                 document.getElementById('statusDot').classList.add('online');
                 document.getElementById('statusText').textContent = 'ONLINE';
-            };
-            
-            ws.onclose = () => {
-                console.log('WebSocket Disconnected');
-                document.getElementById('statusDot').classList.remove('online');
-                document.getElementById('statusText').textContent = 'OFFLINE';
-                setTimeout(connectWebSocket, 3000);
-            };
-            
-            ws.onerror = (error) => {
-                console.error('WebSocket Error:', error);
-            };
-            
-            ws.onmessage = (event) => {
+                
+                mqttClient.subscribe(mqtt_topic, (err) => {
+                    if (err) {
+                        console.error('Subscribe error:', err);
+                    } else {
+                        console.log('Subscribed to:', mqtt_topic);
+                    }
+                });
+            });
+
+            mqttClient.on('message', (topic, message) => {
                 try {
-                    const data = JSON.parse(event.data);
+                    const data = JSON.parse(message.toString());
+                    console.log('Received:', data);
                     updateDisplay(data);
                 } catch (error) {
                     console.error('Parse error:', error);
                 }
-            };
+            });
+
+            mqttClient.on('error', (error) => {
+                console.error('MQTT Error:', error);
+                document.getElementById('statusDot').classList.remove('online');
+                document.getElementById('statusText').textContent = 'ERROR';
+            });
+
+            mqttClient.on('close', () => {
+                console.log('MQTT Disconnected');
+                document.getElementById('statusDot').classList.remove('online');
+                document.getElementById('statusText').textContent = 'OFFLINE';
+            });
+
+            mqttClient.on('reconnect', () => {
+                console.log('Reconnecting to MQTT...');
+                document.getElementById('statusText').textContent = 'RECONNECTING';
+            });
         }
 
+        // ============= UPDATE DISPLAY =============
         function updateDisplay(data) {
             // Update temperature displays
             document.getElementById('currentTemp').textContent = data.currentTemp.toFixed(1);
@@ -618,27 +456,9 @@
             chart.update('none');
         }
 
-        // Simulate data for demo
-        function simulateData() {
-            const data = {
-                currentTemp: 35 + Math.random() * 8,
-                patientTemp: 36 + Math.random() * 2,
-                setpoint: 40
-            };
-            updateDisplay(data);
-        }
-
         // Auto-connect on page load
         window.addEventListener('load', () => {
-            connectWebSocket();
-            // Demo simulation
-            setInterval(simulateData, 1000);
-        });
-
-        document.addEventListener('visibilitychange', () => {
-            if (!document.hidden && (!ws || ws.readyState !== WebSocket.OPEN)) {
-                connectWebSocket();
-            }
+            connectMQTT();
         });
     </script>
 </body>
