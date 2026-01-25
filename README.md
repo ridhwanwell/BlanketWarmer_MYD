@@ -1,4 +1,3 @@
-<!DOCTYPE html>
 <html lang="id">
 <head>
     <meta charset="UTF-8">
@@ -258,7 +257,7 @@
                 <div class="temperature-display temp-patient">
                     <span id="patientTemp">--</span><span class="unit">°C</span>
                 </div>
-                <div class="sub-info">Sensor PT100 MAX31865</div>
+                <div class="sub-info">Sensor DS18B20</div>
             </div>
 
             <div class="card">
@@ -279,11 +278,11 @@
                 <div class="legend">
                     <div class="legend-item">
                         <div class="legend-color" style="background: #ff6b35;"></div>
-                        <span style="font-size: 0.9rem;">Suhu Alat</span>
+                        <span style="font-size: 0.9rem;">Suhu Alat (PT100)</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-color" style="background: #a855f7;"></div>
-                        <span style="font-size: 0.9rem;">Suhu Pasien</span>
+                        <span style="font-size: 0.9rem;">Suhu Pasien (DS18B20)</span>
                     </div>
                     <div class="legend-item">
                         <div class="legend-color" style="background: #00d4ff;"></div>
@@ -302,11 +301,11 @@
         let chart;
         const maxDataPoints = 50;
 
-        // ============= MQTT SETTINGS (FIXED - COCOK DENGAN ESP32) =============
+        // ============= MQTT SETTINGS =============
         const mqtt_broker = 'broker.hivemq.com';
         const mqtt_port = 8000;  // WebSocket port
-        const mqtt_topic_data = 'warmingblanket/data';        // Subscribe data dari ESP32
-        const mqtt_topic_control = 'warmingblanket/control';  // Publish command ke ESP32
+        const mqtt_topic_data = 'warmingblanket/data';
+        const mqtt_topic_control = 'warmingblanket/control';
 
         // Initialize Chart.js
         const ctx = document.getElementById('tempChart').getContext('2d');
@@ -315,7 +314,7 @@
             data: {
                 labels: [],
                 datasets: [{
-                    label: 'Suhu Alat',
+                    label: 'Suhu Alat (PT100)',
                     data: [],
                     borderColor: '#ff6b35',
                     backgroundColor: 'rgba(255, 107, 53, 0.15)',
@@ -325,7 +324,7 @@
                     pointRadius: 0,
                     pointHoverRadius: 6
                 }, {
-                    label: 'Suhu Pasien',
+                    label: 'Suhu Pasien (DS18B20)',
                     data: [],
                     borderColor: '#a855f7',
                     backgroundColor: 'rgba(168, 85, 247, 0.15)',
@@ -357,7 +356,19 @@
                         bodyColor: '#ffffff',
                         borderColor: '#00d4ff',
                         borderWidth: 2,
-                        padding: 14
+                        padding: 14,
+                        callbacks: {
+                            label: function(context) {
+                                let label = context.dataset.label || '';
+                                if (label) {
+                                    label += ': ';
+                                }
+                                if (context.parsed.y !== null) {
+                                    label += context.parsed.y.toFixed(2) + '°C';
+                                }
+                                return label;
+                            }
+                        }
                     }
                 },
                 scales: {
@@ -366,7 +377,12 @@
                         min: 20,
                         max: 60,
                         grid: { color: 'rgba(0, 212, 255, 0.1)' },
-                        ticks: { color: '#00d4ff' }
+                        ticks: { 
+                            color: '#00d4ff',
+                            callback: function(value) {
+                                return value + '°C';
+                            }
+                        }
                     },
                     x: {
                         grid: { color: 'rgba(0, 212, 255, 0.08)' },
@@ -376,7 +392,7 @@
             }
         });
 
-        // ============= MQTT CONNECTION (FIXED - 2 TOPICS) =============
+        // ============= MQTT CONNECTION =============
         function connectMQTT() {
             console.log('Connecting to MQTT broker...');
             
@@ -394,7 +410,6 @@
                 document.getElementById('statusDot').classList.add('online');
                 document.getElementById('statusText').textContent = 'ONLINE';
                 
-                // Subscribe ke DATA topic (terima data dari ESP32)
                 mqttClient.subscribe(mqtt_topic_data, (err) => {
                     if (err) {
                         console.error('Subscribe error:', err);
@@ -434,10 +449,10 @@
 
         // ============= UPDATE DISPLAY =============
         function updateDisplay(data) {
-            // Update temperature displays
-            document.getElementById('currentTemp').textContent = data.currentTemp.toFixed(1);
-            document.getElementById('setpointDisplay').textContent = data.setpoint.toFixed(1);
-            document.getElementById('patientTemp').textContent = data.patientTemp.toFixed(1);
+            // Update temperature displays dengan 2 desimal
+            document.getElementById('currentTemp').textContent = data.currentTemp.toFixed(2);
+            document.getElementById('setpointDisplay').textContent = data.setpoint.toFixed(2);
+            document.getElementById('patientTemp').textContent = data.patientTemp.toFixed(2);
             
             // Update chart
             const now = new Date();
@@ -459,7 +474,7 @@
             chart.update('none');
         }
 
-        // ============= SEND COMMAND TO ESP32 (Optional - untuk kontrol) =============
+        // ============= SEND COMMAND TO ESP32 =============
         function sendCommand(command, value) {
             if (mqttClient && mqttClient.connected) {
                 const payload = {
