@@ -301,13 +301,11 @@
         let chart;
         const maxDataPoints = 50;
 
-        // ============= MQTT SETTINGS =============
         const mqtt_broker = 'broker.hivemq.com';
-        const mqtt_port = 8000;  // WebSocket port
+        const mqtt_port = 8000;
         const mqtt_topic_data = 'warmingblanket/data';
         const mqtt_topic_control = 'warmingblanket/control';
 
-        // Initialize Chart.js
         const ctx = document.getElementById('tempChart').getContext('2d');
         chart = new Chart(ctx, {
             type: 'line',
@@ -339,7 +337,7 @@
                     borderColor: '#00d4ff',
                     borderWidth: 2,
                     borderDash: [8, 4],
-                    tension: 0.4,
+                    tension: 0,
                     fill: false,
                     pointRadius: 0
                 }]
@@ -360,9 +358,7 @@
                         callbacks: {
                             label: function(context) {
                                 let label = context.dataset.label || '';
-                                if (label) {
-                                    label += ': ';
-                                }
+                                if (label) label += ': ';
                                 if (context.parsed.y !== null) {
                                     label += context.parsed.y.toFixed(2) + '°C';
                                 }
@@ -375,7 +371,7 @@
                     y: {
                         beginAtZero: false,
                         min: 20,
-                        max: 60,
+                        max: 50,
                         grid: { color: 'rgba(0, 212, 255, 0.1)' },
                         ticks: { 
                             color: '#00d4ff',
@@ -392,14 +388,12 @@
             }
         });
 
-        // ============= MQTT CONNECTION =============
         function connectMQTT() {
-            console.log('Connecting to MQTT broker...');
+            console.log('Connecting to MQTT...');
             
-            const clientId = 'web_client_' + Math.random().toString(16).substr(2, 8);
-            const connectUrl = `ws://${mqtt_broker}:${mqtt_port}/mqtt`;
+            const clientId = 'web_' + Math.random().toString(16).substr(2, 8);
             
-            mqttClient = mqtt.connect(connectUrl, {
+            mqttClient = mqtt.connect('ws://broker.hivemq.com:8000/mqtt', {
                 clientId: clientId,
                 clean: true,
                 reconnectPeriod: 3000
@@ -411,10 +405,8 @@
                 document.getElementById('statusText').textContent = 'ONLINE';
                 
                 mqttClient.subscribe(mqtt_topic_data, (err) => {
-                    if (err) {
-                        console.error('Subscribe error:', err);
-                    } else {
-                        console.log('Subscribed to:', mqtt_topic_data);
+                    if (!err) {
+                        console.log('Subscribed to: ' + mqtt_topic_data);
                     }
                 });
             });
@@ -422,7 +414,7 @@
             mqttClient.on('message', (topic, message) => {
                 try {
                     const data = JSON.parse(message.toString());
-                    console.log('Received:', data);
+                    console.log('Data received:', data);
                     updateDisplay(data);
                 } catch (error) {
                     console.error('Parse error:', error);
@@ -440,21 +432,13 @@
                 document.getElementById('statusDot').classList.remove('online');
                 document.getElementById('statusText').textContent = 'OFFLINE';
             });
-
-            mqttClient.on('reconnect', () => {
-                console.log('Reconnecting to MQTT...');
-                document.getElementById('statusText').textContent = 'RECONNECTING';
-            });
         }
 
-        // ============= UPDATE DISPLAY =============
         function updateDisplay(data) {
-            // Update temperature displays dengan 2 desimal
             document.getElementById('currentTemp').textContent = data.currentTemp.toFixed(2);
-            document.getElementById('setpointDisplay').textContent = data.setpoint.toFixed(2);
+            document.getElementById('setpointDisplay').textContent = data.setpoint.toFixed(1);
             document.getElementById('patientTemp').textContent = data.patientTemp.toFixed(2);
             
-            // Update chart
             const now = new Date();
             const timeLabel = now.toLocaleTimeString('id-ID');
             
@@ -463,7 +447,6 @@
             chart.data.datasets[1].data.push(data.patientTemp);
             chart.data.datasets[2].data.push(data.setpoint);
             
-            // Limit data points
             if (chart.data.labels.length > maxDataPoints) {
                 chart.data.labels.shift();
                 chart.data.datasets[0].data.shift();
@@ -474,21 +457,6 @@
             chart.update('none');
         }
 
-        // ============= SEND COMMAND TO ESP32 =============
-        function sendCommand(command, value) {
-            if (mqttClient && mqttClient.connected) {
-                const payload = {
-                    command: command,
-                    value: value
-                };
-                mqttClient.publish(mqtt_topic_control, JSON.stringify(payload));
-                console.log('Command sent:', payload);
-            } else {
-                console.error('MQTT not connected!');
-            }
-        }
-
-        // Auto-connect on page load
         window.addEventListener('load', () => {
             connectMQTT();
         });
